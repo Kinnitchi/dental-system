@@ -50,14 +50,19 @@ export function RegisterForm({ onSignIn }: RegisterFormProps) {
       },
       {
         onSuccess: () => {
+          toast.success("Conta criada com sucesso!", { position: "top-right" });
           router.push("/dashboard");
         },
         onError: (ctx) => {
-          if (ctx.error.code === "USER_ALREADY_EXISTS") {
-            toast.error("E-mail já cadastrado.");
+          console.error(ctx.error);
+
+          if (ctx.error.code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL") {
+            toast.error("E-mail já cadastrado.", { position: "bottom-right" });
             return;
           }
-          toast.error("Erro ao criar conta.");
+
+          toast.error("Erro ao criar conta.", { position: "bottom-right" });
+          return;
         },
       }
     );
