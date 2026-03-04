@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 
 import { db } from "@/db";
@@ -29,6 +30,7 @@ export default async function DashboardPage() {
         <h1>Welcome, {session?.user?.name}</h1>
         <h1>{session?.user?.email}</h1>
         <pre>{JSON.stringify(session, null, 2)}</pre>
+        <Image src={session?.user?.image} alt="User Image" width={100} height={100} />
         <SignOutButton />
       </div>
     </>
