@@ -1,9 +1,25 @@
-"use client";
-export default function DashboardPage() {
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+
+import { auth } from "@/lib/auth";
+
+import { SignOutButton } from "./components/sign-out-button";
+
+export default async function DashboardPage() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) redirect("/authentication");
+
   return (
     <>
       <div>
         <p>Dashboard</p>
+        <h1>Welcome, {session?.user?.name}</h1>
+        <h1>{session?.user?.email}</h1>
+        <pre>{JSON.stringify(session, null, 2)}</pre>
+        <SignOutButton />
       </div>
     </>
   );
