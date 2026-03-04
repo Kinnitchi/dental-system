@@ -1,47 +1,70 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import z from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { authClient } from "@/lib/auth-client";
 
 const registerSchema = z
   .object({
-    name: z.string().min(1, { message: "Nome é obrigatório" }).max(30),
-    email: z.string().trim().min(1, { message: "Email é obrigatório" }).email({ message: "Email inválido" }),
-    password: z.string().min(6, { message: "Senha deve ter pelo menos 6 caracteres" }),
-    confirmPassword: z.string().min(1, { message: "Confirmação de senha é obrigatória" }),
+    name: z.string().trim().min(1, { message: "Nome é obrigatório" }),
+    email: z.string().trim().min(1, { message: "E-mail é obrigatório" }).email({ message: "E-mail inválido" }),
+    password: z.string().trim().min(8, { message: "A senha deve ter pelo menos 8 caracteres" }),
+    confirmPassword: z.string().trim().min(1, { message: "Confirmação de senha é obrigatória" }),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Senhas não coincidem",
+    message: "As senhas não coincidem",
     path: ["confirmPassword"],
   });
 
-interface RegisterFormProps extends React.ComponentProps<"form"> {
-  onSignIn: () => void;
+interface RegisterFormProps {
+  onSignIn?: () => void;
 }
 
-export function RegisterForm({ className, onSignIn, ...props }: RegisterFormProps) {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<z.infer<typeof registerSchema>>({
+export function RegisterForm({ onSignIn }: RegisterFormProps) {
+  const router = useRouter();
+
+  const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
-    mode: "onSubmit",
-    defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
   });
 
-  const onSubmit = (data: z.infer<typeof registerSchema>) => {
-    console.log("register", data);
-  };
+  async function onSubmit(values: z.infer<typeof registerSchema>) {
+    await authClient.signUp.email(
+      {
+        email: values.email,
+        password: values.password,
+        name: values.name,
+      },
+      {
+        onSuccess: () => {
+          router.push("/dashboard");
+        },
+        onError: (ctx) => {
+          if (ctx.error.code === "USER_ALREADY_EXISTS") {
+            toast.error("E-mail já cadastrado.");
+            return;
+          }
+          toast.error("Erro ao criar conta.");
+        },
+      }
+    );
+  }
 
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props} onSubmit={handleSubmit(onSubmit)}>
+    <form className="flex flex-col gap-6" onSubmit={form.handleSubmit(onSubmit)}>
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
           <h1 className="text-2xl font-bold">Crie sua conta</h1>
@@ -50,8 +73,16 @@ export function RegisterForm({ className, onSignIn, ...props }: RegisterFormProp
         <Field>
           <div className="flex flex-col gap-1">
             <FieldLabel htmlFor="name">Nome completo</FieldLabel>
-            <Input id="name" type="text" placeholder="João Silva" aria-invalid={!!errors.name} {...register("name")} />
-            {errors.name && <span className="text-destructive text-xs">{errors.name.message}</span>}
+            <Input
+              id="name"
+              type="text"
+              placeholder="João Silva"
+              aria-invalid={!!form.formState.errors.name}
+              {...form.register("name")}
+            />
+            {form.formState.errors.name && (
+              <span className="text-destructive text-xs">{form.formState.errors.name.message}</span>
+            )}
           </div>
         </Field>
         <Field>
@@ -61,17 +92,26 @@ export function RegisterForm({ className, onSignIn, ...props }: RegisterFormProp
               id="email"
               type="email"
               placeholder="m@example.com"
-              aria-invalid={!!errors.email}
-              {...register("email")}
+              aria-invalid={!!form.formState.errors.email}
+              {...form.register("email")}
             />
-            {errors.email && <span className="text-destructive text-xs">{errors.email.message}</span>}
+            {form.formState.errors.email && (
+              <span className="text-destructive text-xs">{form.formState.errors.email.message}</span>
+            )}
           </div>
         </Field>
         <Field>
           <div className="flex flex-col gap-1">
             <FieldLabel htmlFor="password">Senha</FieldLabel>
-            <Input id="password" type="password" aria-invalid={!!errors.password} {...register("password")} />
-            {errors.password && <span className="text-destructive text-xs">{errors.password.message}</span>}
+            <Input
+              id="password"
+              type="password"
+              aria-invalid={!!form.formState.errors.password}
+              {...form.register("password")}
+            />
+            {form.formState.errors.password && (
+              <span className="text-destructive text-xs">{form.formState.errors.password.message}</span>
+            )}
           </div>
         </Field>
         <Field>
@@ -80,16 +120,18 @@ export function RegisterForm({ className, onSignIn, ...props }: RegisterFormProp
             <Input
               id="confirm-password"
               type="password"
-              aria-invalid={!!errors.confirmPassword}
-              {...register("confirmPassword")}
+              aria-invalid={!!form.formState.errors.confirmPassword}
+              {...form.register("confirmPassword")}
             />
-            {errors.confirmPassword && (
-              <span className="text-destructive text-xs">{errors.confirmPassword.message}</span>
+            {form.formState.errors.confirmPassword && (
+              <span className="text-destructive text-xs">{form.formState.errors.confirmPassword.message}</span>
             )}
           </div>
         </Field>
         <Field>
-          <Button type="submit">Criar conta</Button>
+          <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Criar conta"}
+          </Button>
         </Field>
         <Field>
           <FieldDescription className="text-center">

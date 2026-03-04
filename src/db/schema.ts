@@ -18,7 +18,7 @@ export const usersTable = pgTable("users", {
 });
 
 export const userRelations = relations(usersTable, ({ many }) => ({
-  sessions: many(sessionsTables),
+  sessions: many(sessionsTable),
   accounts: many(accountsTable),
 }));
 
@@ -26,7 +26,7 @@ export const userRelationsTable = relations(usersTable, ({ many }) => ({
   usersToClinics: many(usersToClinicsTable),
 }));
 
-export const sessionsTables = pgTable(
+export const sessionsTable = pgTable(
   "sessions",
   {
     id: text("id").primaryKey(),
@@ -85,9 +85,9 @@ export const verificationsTable = pgTable(
   (table) => [index("verification_identifier_idx").on(table.identifier)]
 );
 
-export const sessionRelations = relations(sessionsTables, ({ one }) => ({
+export const sessionRelations = relations(sessionsTable, ({ one }) => ({
   user: one(usersTable, {
-    fields: [sessionsTables.userId],
+    fields: [sessionsTable.userId],
     references: [usersTable.id],
   }),
 }));
