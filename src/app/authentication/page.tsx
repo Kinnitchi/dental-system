@@ -1,11 +1,12 @@
 "use client";
 
-import { GalleryVerticalEnd } from "lucide-react";
+import { Home } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 
 import { LoginForm } from "@/app/authentication/components/login-form";
 import { RegisterForm } from "@/app/authentication/components/sign-up-form";
+import logo from "@/assets/images/fundo-de-publicidade-de-clinica-dentaria.jpg";
 import { Spinner } from "@/components/ui/spinner";
 
 export default function AuthenticationPage() {
@@ -21,17 +22,22 @@ export default function AuthenticationPage() {
   };
 
   return (
-    <div className="grid min-h-svh lg:grid-cols-2">
-      <div className="bg-muted relative hidden lg:block">
-        <Image src="/placeholder.svg" alt="Image" fill className="object-cover dark:brightness-[0.2] dark:grayscale" />
+    <div className="grid min-h-screen lg:grid-cols-[3fr_2fr]">
+      <div className="bg-muted relative hidden overflow-hidden lg:block">
+        <Image src={logo} alt="Clínica Dental" fill className="object-cover object-left" priority />
+        <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
+        <div className="absolute right-8 bottom-10 left-8 text-white">
+          <h2 className="text-3xl leading-snug font-bold drop-shadow-lg">Cuidando do seu sorriso</h2>
+          <p className="mt-2 text-sm text-white/80">Gerencie sua clínica com praticidade e eficiência.</p>
+        </div>
       </div>
       <div className="flex flex-col gap-4 p-6 md:p-10">
         <div className="flex justify-center gap-2 md:justify-start">
           <a href="#" className="flex items-center gap-2 font-medium">
             <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
-              <GalleryVerticalEnd className="size-4" />
+              <Home className="size-4" />
             </div>
-            <span>System Dental</span>
+            <span>Sistema de gerenciamento de clínica</span>
           </a>
         </div>
         <div className="flex flex-1 items-center justify-center">
