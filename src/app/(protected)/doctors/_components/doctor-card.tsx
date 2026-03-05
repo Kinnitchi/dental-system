@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarIcon, ClockIcon, DollarSignIcon, TrashIcon } from "lucide-react";
+import Image from "next/image";
 import { useAction } from "next-safe-action/hooks";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -26,9 +27,9 @@ import { Separator } from "@/components/ui/separator";
 import { doctorsTable } from "@/db/schema";
 import { formatCurrencyInCents } from "@/helpers/currency";
 
+import dentalIcon from "../../../../assets/images/doctor-icon.png";
 import { getAvailability } from "../_helpers/availibility";
 import UpsertDoctorForm from "./upsert-doctor-form";
-
 interface DoctorCardProps {
   doctor: typeof doctorsTable.$inferSelect;
 }
@@ -63,21 +64,30 @@ const DoctorCard = ({ doctor }: DoctorCardProps) => {
           </Avatar>
           <div>
             <h3 className="text-sm font-medium">{doctor.name}</h3>
-            <p className="text-muted-foreground text-sm">{doctor.specialty}</p>
+            <div className="flex items-center gap-1">
+              <Badge
+                variant="info"
+                className="px-1"
+                style={{ display: "flex", alignItems: "center", color: "var(--color-primary)" }}
+              >
+                <Image src={dentalIcon} alt="dental icon" width={12} height={12} />
+              </Badge>
+              <p style={{ fontSize: "0.8rem", color: "var(--color-primary)" }}>{doctor.specialty}</p>
+            </div>
           </div>
         </div>
       </CardHeader>
       <Separator />
       <CardContent className="flex flex-col gap-2">
-        <Badge variant="outline">
+        <Badge variant="text">
           <CalendarIcon className="mr-1" />
           {availability.from.format("dddd")} a {availability.to.format("dddd")}
         </Badge>
-        <Badge variant="outline">
+        <Badge variant="text">
           <ClockIcon className="mr-1" />
           {availability.from.format("HH:mm")} as {availability.to.format("HH:mm")}
         </Badge>
-        <Badge variant="outline">
+        <Badge variant="text">
           <DollarSignIcon className="mr-1" />
           {formatCurrencyInCents(doctor.appointmentPriceInCents)}
         </Badge>
