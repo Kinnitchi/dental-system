@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 
-import { ClinicForm } from "./components/clinic-form";
+import { ClinicForm } from "./_components/clinic-form";
 
 export default async function ClinicFormPage() {
   const session = await auth.api.getSession({
