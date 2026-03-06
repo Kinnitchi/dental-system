@@ -68,7 +68,7 @@ const DoctorCard = ({ doctor }: DoctorCardProps) => {
               <Badge
                 variant="info"
                 className="px-1"
-                style={{ display: "flex", alignItems: "center", color: "var(--color-primary)" }}
+                style={{ display: "flex", alignItems: "center", color: "var(--chart-5)" }}
               >
                 <Image src={dentalIcon} alt="dental icon" width={12} height={12} />
               </Badge>
