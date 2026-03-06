@@ -148,6 +148,8 @@ export const patientsTableRelations = relations(patientsTable, ({ one, many }) =
   appointments: many(appointmentsTable),
 }));
 
+export const appointmentStatusEnum = pgEnum("appointment_status", ["scheduled", "completed", "cancelled"]);
+
 export const appointmentsTable = pgTable("appointments", {
   id: uuid("id").defaultRandom().primaryKey(),
   date: timestamp("date").notNull(),
@@ -160,6 +162,8 @@ export const appointmentsTable = pgTable("appointments", {
   doctorId: uuid("doctor_id")
     .notNull()
     .references(() => doctorsTable.id, { onDelete: "cascade" }),
+  status: appointmentStatusEnum("status").notNull().default("scheduled"),
+  appointmentPriceInCents: integer("appointment_price_in_cents").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
