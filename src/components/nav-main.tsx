@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, type LucideIcon } from "lucide-react";
+import { ChevronRight, Diamond, type LucideIcon, Settings } from "lucide-react";
 import Link from "next/link";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -71,6 +71,34 @@ export function NavMain({
             </SidebarMenuItem>
           )
         )}
+      </SidebarMenu>
+
+      <SidebarGroupLabel>Configurações</SidebarGroupLabel>
+      <SidebarMenu>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname === "/account-settings"} tooltip="Configurações da conta">
+              <Link href="/account-settings">
+                <Settings />
+                <span> Configurações da Conta</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarMenu>
+
+      <SidebarGroupLabel>Outros</SidebarGroupLabel>
+      <SidebarMenu>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname === "/subscription"} tooltip="Planos">
+              <Link href="/subscription">
+                <Diamond />
+                <span>Planos</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarMenu>
     </SidebarGroup>
   );
