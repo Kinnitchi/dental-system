@@ -12,8 +12,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { getAvailableTimes } from "@/actions/get-avaliable-times/actions";
-import { upsertAppointment } from "@/actions/upsert-appointment/actions";
-import { upsertAppointmentSchema } from "@/actions/upsert-appointment/schema";
+import { addAppointment } from "@/actions/upsert-appointment/actions";
 import { Button } from "@/components/ui/button";
 import { DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -26,6 +25,14 @@ const STATUS_LABELS: Record<string, string> = {
   completed: "Concluído",
   cancelled: "Cancelado",
 };
+
+const upsertFormSchema = z.object({
+  patientId: z.string().uuid({ message: "Paciente é obrigatório." }),
+  doctorId: z.string().uuid({ message: "Médico é obrigatório." }),
+  date: z.date({ message: "Data é obrigatória." }),
+  status: z.enum(["scheduled", "completed", "cancelled"]),
+  appointmentPriceInCents: z.number().min(0, { message: "Valor é obrigatório." }),
+});
 
 import { CalendarIcon } from "lucide-react";
 
@@ -51,9 +58,9 @@ function formatDate(date: Date | undefined) {
 }
 
 const UpsertAppointmentForm = ({ appointment, patients, doctors, onSuccess }: UpsertAppointmentFormProps) => {
-  const form = useForm<z.infer<typeof upsertAppointmentSchema>>({
+  const form = useForm<z.infer<typeof upsertFormSchema>>({
     shouldUnregister: true,
-    resolver: zodResolver(upsertAppointmentSchema),
+    resolver: zodResolver(upsertFormSchema),
     defaultValues: {
       patientId: appointment?.patientId ?? "",
       doctorId: appointment?.doctorId ?? "",
@@ -109,7 +116,7 @@ const UpsertAppointmentForm = ({ appointment, patients, doctors, onSuccess }: Up
 
   const [datePickerOpen, setDatePickerOpen] = React.useState(false);
 
-  const upsertAppointmentAction = useAction(upsertAppointment, {
+  const upsertAppointmentAction = useAction(addAppointment, {
     onSuccess: () => {
       toast.success(appointment ? "Agendamento atualizado com sucesso." : "Agendamento criado com sucesso.");
       onSuccess?.();
@@ -119,8 +126,16 @@ const UpsertAppointmentForm = ({ appointment, patients, doctors, onSuccess }: Up
     },
   });
 
-  const onSubmit = (values: z.infer<typeof upsertAppointmentSchema>) => {
-    upsertAppointmentAction.execute({ ...values, id: appointment?.id });
+  const onSubmit = (values: z.infer<typeof upsertFormSchema>) => {
+    const time = dayjs(values.date).format("HH:mm:ss");
+    upsertAppointmentAction.execute({
+      patientId: values.patientId,
+      doctorId: values.doctorId,
+      date: values.date,
+      time,
+      appointmentPriceInCents: values.appointmentPriceInCents,
+      status: values.status,
+    });
   };
 
   return (

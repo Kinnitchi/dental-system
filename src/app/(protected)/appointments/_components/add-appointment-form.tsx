@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { getAvailableTimes } from "@/actions/get-avaliable-times/actions";
-import { upsertAppointment } from "@/actions/upsert-appointment/actions";
+import { addAppointment } from "@/actions/upsert-appointment/actions";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -103,7 +103,7 @@ const AddAppointmentForm = ({ patients, doctors, onSuccess, isOpen }: AddAppoint
     }
   }, [isOpen, form]);
 
-  const createAppointmentAction = useAction(upsertAppointment, {
+  const createAppointmentAction = useAction(addAppointment, {
     onSuccess: () => {
       toast.success("Agendamento criado com sucesso.");
       onSuccess?.();
@@ -122,6 +122,7 @@ const AddAppointmentForm = ({ patients, doctors, onSuccess, isOpen }: AddAppoint
       doctorId: values.doctorId,
       appointmentPriceInCents: Math.round((values.appointmentPrice ?? 0) * 100),
       date: dateTime,
+      time: values.time,
       status: "scheduled",
     });
   };
