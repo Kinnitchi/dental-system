@@ -1,14 +1,17 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ptBR } from "date-fns/locale";
 import dayjs from "dayjs";
 import { useAction } from "next-safe-action/hooks";
 import { useEffect, useMemo } from "react";
+import * as React from "react";
 import { useForm } from "react-hook-form";
 import { NumericFormat } from "react-number-format";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { getAvailableTimes } from "@/actions/get-avaliable-times/actions";
 import { upsertAppointment } from "@/actions/upsert-appointment/actions";
 import { upsertAppointmentSchema } from "@/actions/upsert-appointment/schema";
 import { Button } from "@/components/ui/button";
@@ -24,19 +27,27 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: "Cancelado",
 };
 
-const TIME_SLOTS = Array.from({ length: 48 }, (_, i) => {
-  const h = Math.floor(i / 2)
-    .toString()
-    .padStart(2, "0");
-  const m = i % 2 === 0 ? "00" : "30";
-  return `${h}:${m}`;
-});
+import { CalendarIcon } from "lucide-react";
+
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface UpsertAppointmentFormProps {
   appointment?: typeof appointmentsTable.$inferSelect;
   patients: (typeof patientsTable.$inferSelect)[];
   doctors: (typeof doctorsTable.$inferSelect)[];
   onSuccess?: () => void;
+}
+
+function formatDate(date: Date | undefined) {
+  if (!date) {
+    return "";
+  }
+  return date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 const UpsertAppointmentForm = ({ appointment, patients, doctors, onSuccess }: UpsertAppointmentFormProps) => {
@@ -53,6 +64,9 @@ const UpsertAppointmentForm = ({ appointment, patients, doctors, onSuccess }: Up
   });
 
   const selectedDoctorId = form.watch("doctorId");
+  const selectedPatientId = form.watch("patientId");
+  const selectedDate = form.watch("date");
+
   const selectedDoctor = useMemo(() => doctors.find((d) => d.id === selectedDoctorId), [selectedDoctorId, doctors]);
 
   // Quando o médico muda, pré-preenche o preço com o valor padrão do médico
@@ -61,6 +75,39 @@ const UpsertAppointmentForm = ({ appointment, patients, doctors, onSuccess }: Up
       form.setValue("appointmentPriceInCents", selectedDoctor.appointmentPriceInCents);
     }
   }, [selectedDoctor, appointment, form]);
+
+  // Busca horários disponíveis quando médico + data estão selecionados
+  const getAvailableTimesAction = useAction(getAvailableTimes);
+
+  useEffect(() => {
+    if (selectedDoctorId && selectedDate) {
+      getAvailableTimesAction.execute({
+        doctorId: selectedDoctorId,
+        date: dayjs(selectedDate).format("YYYY-MM-DD"),
+        patientId: selectedPatientId || undefined,
+        appointmentId: appointment?.id,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDoctorId, selectedPatientId, selectedDate ? dayjs(selectedDate).format("YYYY-MM-DD") : null]);
+
+  const availableTimesResult = getAvailableTimesAction.result?.data as
+    | { doctorAvailable: boolean; timeSlots: { value: string; available: boolean; label: string }[] }
+    | undefined;
+  const timeSlots = availableTimesResult?.timeSlots ?? [];
+
+  // Função para desabilitar dias fora do período de atuação do médico
+  const isDateDisabled = (date: Date) => {
+    const today = dayjs().startOf("day");
+    if (dayjs(date).isBefore(today)) return true;
+    if (!selectedDoctor) return false;
+    const dayOfWeek = dayjs(date).day();
+    const from = Number(selectedDoctor.availableFromWeekDay);
+    const to = Number(selectedDoctor.availableToWeekDay);
+    return dayOfWeek < from || dayOfWeek > to;
+  };
+
+  const [datePickerOpen, setDatePickerOpen] = React.useState(false);
 
   const upsertAppointmentAction = useAction(upsertAppointment, {
     onSuccess: () => {
@@ -183,20 +230,50 @@ const UpsertAppointmentForm = ({ appointment, patients, doctors, onSuccess }: Up
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Data</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="date"
-                      value={field.value ? dayjs(field.value).format("YYYY-MM-DD") : ""}
-                      onChange={(e) => {
-                        const currentTime = field.value ? dayjs(field.value).format("HH:mm") : "08:00";
-                        field.onChange(e.target.value ? new Date(`${e.target.value}T${currentTime}`) : undefined);
-                      }}
-                    />
-                  </FormControl>
+                  <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button variant="outline" className="w-full justify-start text-left font-normal">
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {field.value ? formatDate(field.value) : "Selecione uma data"}
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={(date) => {
+                          if (date) {
+                            const currentTime = field.value ? dayjs(field.value).format("HH:mm") : "08:00";
+                            const [hours, minutes] = currentTime.split(":");
+                            const newDate = new Date(date);
+                            newDate.setHours(parseInt(hours), parseInt(minutes));
+                            field.onChange(newDate);
+                          } else {
+                            field.onChange(undefined);
+                          }
+                          setDatePickerOpen(false);
+                        }}
+                        disabled={isDateDisabled}
+                        locale={ptBR}
+                        formatters={{
+                          formatCaption: (date) => {
+                            const formatted = new Intl.DateTimeFormat("pt-BR", {
+                              month: "long",
+                              year: "numeric",
+                            }).format(date);
+                            return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+                          },
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="date"
@@ -211,18 +288,34 @@ const UpsertAppointmentForm = ({ appointment, patients, doctors, onSuccess }: Up
                         : dayjs().format("YYYY-MM-DD");
                       field.onChange(new Date(`${currentDate}T${time}`));
                     }}
+                    disabled={!selectedDoctorId || !selectedDate || getAvailableTimesAction.isPending}
                   >
                     <FormControl>
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Selecione" />
+                        <SelectValue
+                          placeholder={
+                            !selectedDoctorId
+                              ? "Sel. médico primeiro"
+                              : !selectedDate
+                                ? "Sel. data primeiro"
+                                : getAvailableTimesAction.isPending
+                                  ? "Carregando..."
+                                  : "Selecione"
+                          }
+                        />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent position="popper" className="max-h-60 overflow-y-auto">
-                      {TIME_SLOTS.map((slot) => (
-                        <SelectItem key={slot} value={slot}>
-                          {slot}
-                        </SelectItem>
-                      ))}
+                      {timeSlots.length === 0 && !getAvailableTimesAction.isPending ? (
+                        <div className="text-muted-foreground px-3 py-2 text-sm">Nenhum horário disponível</div>
+                      ) : (
+                        timeSlots.map((slot) => (
+                          <SelectItem key={slot.value} value={slot.label} disabled={!slot.available}>
+                            {slot.label}
+                            {!slot.available && " — ocupado"}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
