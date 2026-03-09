@@ -11,11 +11,11 @@ export const PageHeaderContent = ({ children }: { children: React.ReactNode }) =
 };
 
 export const PageTitle = ({ children }: { children: React.ReactNode }) => {
-  return <h1 className="text-2xl font-bold">{children}</h1>;
+  return <h1 className="text-3xl font-bold">{children}</h1>;
 };
 
 export const PageDescription = ({ children }: { children: React.ReactNode }) => {
-  return <p className="text-muted-foreground text-sm">{children}</p>;
+  return <p className="text-muted-foreground text-1xl mt-2">{children}</p>;
 };
 
 export const PageActions = ({ children }: { children: React.ReactNode }) => {

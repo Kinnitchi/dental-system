@@ -1,7 +1,6 @@
 "use client";
 
 import { CheckCircle2, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useAction } from "next-safe-action/hooks";
 
 import { createStripeCheckout } from "@/actions/create-stripe-checkout/actions";
@@ -16,7 +15,6 @@ interface SubscriptionPlanProps {
 }
 
 export function SubscriptionPlan({ active = false, className, userEmail }: SubscriptionPlanProps) {
-  const router = useRouter();
   const createStripeCheckoutAction = useAction(createStripeCheckout, {
     onSuccess: ({ data }) => {
       if (!data?.url) {
@@ -39,7 +37,7 @@ export function SubscriptionPlan({ active = false, className, userEmail }: Subsc
   };
 
   const handleManagePlanClick = () => {
-    router.push(`${process.env.NEXT_PUBLIC_STRIPE_CUSTOMER_PORTAL_URL}?prefilled_email=${userEmail}`);
+    window.open(`${process.env.NEXT_PUBLIC_STRIPE_CUSTOMER_PORTAL_URL}?prefilled_email=${userEmail}`, "_blank");
   };
 
   return (

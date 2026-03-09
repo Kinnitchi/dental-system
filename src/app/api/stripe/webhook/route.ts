@@ -21,30 +21,41 @@ export const POST = async (request: Request) => {
 
   switch (event.type) {
     case "invoice.paid": {
-      if (!event.data.object.id) {
-        throw new Error("Subscription ID not found");
-      }
-      const { subscription, subscription_details, customer } = event.data.object as unknown as {
-        customer: string;
-        subscription: string;
-        subscription_details: {
-          metadata: {
-            userId: string;
-          };
-        };
-      };
-      if (!subscription) {
+      console.log("Received Stripe event:", JSON.stringify(event, null, 2));
+      const invoice = event.data.object;
+
+      // Na API mais recente do Stripe (basil/clover), o subscription_id fica em
+      // invoice.parent.subscription_details.subscription
+      const invoiceParent = invoice.parent as unknown as {
+        type: string;
+        subscription_details?: { subscription: string };
+      } | null;
+
+      const subscriptionId =
+        (invoice as unknown as { subscription?: string }).subscription ||
+        invoiceParent?.subscription_details?.subscription;
+
+      const customerId =
+        typeof invoice.customer === "string" ? invoice.customer : (invoice.customer as { id: string })?.id;
+
+      if (!subscriptionId) {
         throw new Error("Subscription not found");
       }
-      const userId = subscription_details.metadata.userId;
+
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+      const userId = subscription.metadata?.userId;
+
       if (!userId) {
-        throw new Error("User ID not found");
+        throw new Error("User ID not found in subscription metadata");
       }
+
+      console.log("Subscription paid:", subscriptionId, "Customer:", customerId, "User ID:", userId);
+
       await db
         .update(usersTable)
         .set({
-          stripeSubscriptionId: subscription,
-          stripeCustomerId: customer,
+          stripeSubscriptionId: subscriptionId,
+          stripeCustomerId: customerId,
           plan: "essential",
         })
         .where(eq(usersTable.id, userId));
